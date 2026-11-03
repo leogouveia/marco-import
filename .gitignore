@@ -1,0 +1,16 @@
+# Configuração real (organização, e-mails, tokens): nunca versionar.
+marco-import.yaml
+marco-import.yml
+*.local.yaml
+
+# Saídas e dados coletados (contêm dados de trabalho).
+saida/
+dump/
+marco-import-*.json
+*.zip
+
+node_modules/
+dist/
+coverage/
+.env
+.env.*

@@ -1,0 +1,38 @@
+{
+  "name": "marco-import",
+  "version": "0.1.0",
+  "description": "Coleta PBIs do Azure Boards e commits/PRs do GitHub, compara com um backup do Marco e gera um arquivo de importação.",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "bin": {
+    "marco-import": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.7.5",
+    "jszip": "^3.10.2",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "files": [
+    "dist",
+    "marco-import.example.yaml",
+    "README.md",
+    "docs"
+  ]
+}

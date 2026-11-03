@@ -1,0 +1,54 @@
+# Exemplo de configuração do marco-import.
+#
+# Copie para marco-import.yaml (ignorado pelo git) e preencha com os seus dados.
+# Este arquivo de exemplo usa só valores fictícios e os estados padrão do processo Scrum.
+
+azure:
+  # Organização do Azure DevOps (o trecho depois de dev.azure.com/).
+  organization: minha-organizacao
+  base_url: https://dev.azure.com/minha-organizacao
+  # Personal Access Token com o escopo "Work Items (Read)".
+  # Prefira a variável de ambiente AZURE_DEVOPS_PAT, que prevalece sobre este campo.
+  token: ""
+  projects:
+    - name: MeuProjeto
+      # id: 00000000-0000-0000-0000-000000000000   # opcional
+  work_item_types:
+    - Product Backlog Item
+  user:
+    # E-mail com que você aparece em "Assigned To".
+    email: voce@empresa.exemplo
+    # aliases: [outro-nome@empresa.exemplo]
+  # Estados do Azure (do processo do seu time) por status do Marco.
+  # Um estado só pode aparecer uma vez. Estados não listados não são importados e geram aviso.
+  status_map:
+    ATRIBUIDO: [New, Approved, Committed]
+    EM_DESENVOLVIMENTO: [In Progress]
+    ENTREGUE: [Done]
+    HOMOLOGADO: []
+    EM_PRODUCAO: []
+  # Estados que indicam PBI removido do board: não importa e avisa.
+  removed_states: [Removed]
+  # Estados em que, se o PBI estava com você, ele continua seu mesmo depois de mudar de
+  # responsável. Sem este campo: os estados de EM_DESENVOLVIMENTO.
+  # ownership_states: [In Progress]
+
+github:
+  # Para github.com, mantenha os padrões de api_url e web_url.
+  # api_url: https://api.github.com
+  # web_url: https://github.com
+  # Token com leitura de Contents e Pull requests. Em organizações com SSO, autorize o token
+  # para a organização. Prefira a variável GITHUB_TOKEN, que prevalece sobre este campo.
+  token: ""
+  # Seu login no GitHub (para achar os seus PRs).
+  login: seu-login
+  # E-mails usados nos seus commits. Ficam só aqui; não vão para o Marco.
+  author_emails:
+    - voce@empresa.exemplo
+  # Repositórios consultados, no formato dono/nome.
+  repositories:
+    - minha-organizacao/meu-repositorio
+
+output:
+  # Pasta onde o arquivo de importação é gravado.
+  directory: saida
