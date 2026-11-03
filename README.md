@@ -92,7 +92,7 @@ ignorado pelo git. Não envie tokens por e-mail ou chat; se isso acontecer, revo
 ## Uso
 
 ```bash
-npm start -- --backup ~/Downloads/marco-backup.zip
+npm run import -- --backup C:\caminho\marco-backup.zip
 ```
 
 | Opção | Descrição |
