@@ -50,5 +50,6 @@ github:
     - minha-organizacao/meu-repositorio
 
 output:
-  # Pasta onde o arquivo de importação é gravado.
-  directory: saida
+  # Pasta do JSON de importação, relativa à pasta do projeto (ou caminho absoluto).
+  # Padrão: a própria pasta do projeto. --out permite escolher outra pasta nesta execução.
+  directory: "."

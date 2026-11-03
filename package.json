@@ -35,5 +35,8 @@
     "marco-import.example.yaml",
     "README.md",
     "docs"
-  ]
+  ],
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
 }

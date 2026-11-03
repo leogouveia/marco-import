@@ -10,7 +10,7 @@ o que entra.
 ## Como funciona
 
 1. No Marco, exporte um backup em **Dispositivo → Exportar backup** (arquivo `.zip`).
-2. Rode o `marco-import` com esse backup.
+2. Rode o `marco-import` com esse backup (formatos 1, 2 ou 3). Escolha a versão no terminal ou use a detecção automática.
 3. Escolha o plano que vai receber os dados.
 4. A ferramenta coleta do Azure e do GitHub e mostra cada item com a sua situação:
 
@@ -27,7 +27,7 @@ o que entra.
    | Removido | Não | Removido do board no Azure (avisa se existir no Marco). |
    | Sem mapeamento | Não | Estado do Azure fora da configuração. |
 
-5. Marque o que quer importar. A ferramenta grava `saida/marco-import-<data>.json`.
+5. Marque o que quer importar. A ferramenta grava `marco-import-<data>.json` na pasta do projeto por padrão.
 6. No Marco, abra **Importar** e selecione o arquivo.
 
 ### Regras
@@ -63,6 +63,24 @@ dentro da pasta.
 
 Para atualizar: `git pull`, `npm ci` e `npm run build`.
 
+### Install scripts
+
+O campo `allowScripts` do `package.json` lista as dependências autorizadas a rodar scripts de
+instalação. Hoje só o `esbuild` (usado pelo `tsx`) tem um: o `postinstall` que valida o binário da
+plataforma. A aprovação vale para a versão instalada (`esbuild@<versão>`).
+
+Se o `npm ci` avisar que há install scripts não revisados (por exemplo, depois de atualizar o
+`esbuild`), revise e aprove:
+
+```bash
+npm install-scripts ls                  # lista os pendentes
+npm install-scripts approve esbuild     # aprova (grava no package.json)
+npm install-scripts deny <pacote>       # bloqueia
+```
+
+Isso exige um npm recente (11.x) com suporte a `allowScripts`. Em versões antigas o campo é
+ignorado e os scripts rodam normalmente.
+
 ## Configuração
 
 ```bash
@@ -92,14 +110,60 @@ ignorado pelo git. Não envie tokens por e-mail ou chat; se isso acontecer, revo
 ## Uso
 
 ```bash
-npm run import -- --backup C:\caminho\marco-backup.zip
+npm run import -- --backup /caminho/marco-backup.zip
 ```
+
+O `--` separa as opções do npm das opções do `marco-import`.
+
+**Windows PowerShell:** dentro da pasta do projeto, use o Node diretamente e coloque os
+caminhos entre aspas:
+
+```powershell
+npm run build
+node .\dist\cli.js --backup "C:\Users\SeuNome\Downloads\marco-backup.zip"
+```
+
+Para escolher explicitamente o formato 1:
+
+```powershell
+node .\dist\cli.js --backup "C:\Users\SeuNome\Downloads\marco-backup.zip" --backup-version 1
+```
+
+A versão é a do **formato do backup**, indicada em `manifest.json`, não a versão da aplicação.
+A escolha é conferida contra o arquivo; escolher outra versão não converte o ZIP. As versões
+1, 2 e 3 são aceitas. O JSON de saída continua no formato de importação 1.
+
+O caminho de `--backup` deve apontar para um **ZIP já existente**, exportado no Marco em
+**Dispositivo → Exportar backup**. Ele é usado para ler os planos e comparar o que já existe.
+Não é o nome do arquivo que será gerado.
+
+A saída é **`marco-import-<data>.json`**, um arquivo de texto estruturado. É esse JSON que você
+seleciona na tela **Importar** do Marco. Não precisa enviar o ZIP nessa tela nem renomear a
+saída para `.txt`.
+
+Por padrão, o JSON fica na **pasta do projeto**, ao lado do `package.json`. `output.directory`
+no YAML permite escolher outra pasta; caminhos relativos nesse campo partem da pasta do
+projeto. Para trazer uma configuração antiga ao novo padrão, remova `output.directory` ou use
+`directory: "."`. A opção `--out` prevalece sobre o YAML; caminhos relativos passados por essa
+opção partem da pasta atual do terminal.
+
+Se ocorrer erro de arquivo não encontrado, a mensagem informa o caminho completo procurado e
+se está faltando o YAML de configuração ou o ZIP de entrada. Para conferir o ZIP no PowerShell:
+
+```powershell
+Test-Path -LiteralPath "C:\Users\SeuNome\Downloads\marco-backup.zip" -PathType Leaf
+```
+
+O resultado deve ser `True`. O YAML padrão é procurado na pasta do projeto; `--config` permite
+informar outro arquivo. Se o erro mencionar `dist/cli.js`, execute `npm run build` na pasta do
+projeto antes de iniciar a ferramenta.
 
 | Opção | Descrição |
 | --- | --- |
 | `-b, --backup <arquivo>` | Backup do Marco. Obrigatório. |
-| `-c, --config <arquivo>` | Configuração (padrão: `marco-import.yaml`). |
-| `-o, --out <pasta>` | Pasta do arquivo gerado (padrão: `output.directory`). |
+| `--backup-version <versão>` | Versão do backup: `auto`, `1`, `2` ou `3`. Sem a opção, pergunta; com `--yes`, detecta automaticamente. |
+| `-c, --config <arquivo>` | Configuração (padrão: `marco-import.yaml` na pasta do projeto). |
+| `-o, --out <pasta>` | Pasta do JSON gerado (padrão: pasta do projeto; configurável em `output.directory`). |
 | `-p, --plan <id>` | ID do plano no Marco (sem isso, pergunta). |
 | `-y, --yes` | Sem perguntas: usa a seleção padrão. |
 | `--dump <pasta>` | Grava as respostas do Azure e do GitHub, para diagnóstico. |
@@ -126,7 +190,7 @@ gravados. A pasta tem dados de trabalho: é ignorada pelo git e não deve ser pu
 ```bash
 npm test          # testes (sem rede)
 npm run typecheck
-npm run dev -- --backup <arquivo.zip>   # roda direto do código-fonte
+npm run dev -- --backup <arquivo.zip>   # roda direto do código-fonte (PowerShell: veja Uso)
 ```
 
 Organização do código:

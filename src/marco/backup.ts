@@ -1,5 +1,5 @@
 /**
- * Leitura do backup local do Marco (ZIP, formato 3).
+ * Leitura do backup local do Marco (ZIP, formatos 1, 2 e 3).
  *
  * Só leitura: o arquivo não é alterado. Os campos são validados de forma permissiva (campos a
  * mais são ignorados), para que versões novas do Marco continuem legíveis enquanto o formato
@@ -10,8 +10,17 @@ import JSZip from "jszip";
 import { z } from "zod";
 import { MARCO_STATUSES } from "../domain/status.js";
 import type { MarcoState } from "./types.js";
+import { missingInputMessage } from "../shared/paths.js";
 
-export const SUPPORTED_BACKUP_VERSION = 3;
+export const SUPPORTED_BACKUP_VERSIONS = [1, 2, 3] as const;
+export type BackupVersion = (typeof SUPPORTED_BACKUP_VERSIONS)[number];
+export type BackupVersionChoice = BackupVersion | "auto";
+
+export function parseBackupVersion(value: string): BackupVersionChoice {
+  if (value === "auto") return "auto";
+  if (value === "1" || value === "2" || value === "3") return Number(value) as BackupVersion;
+  throw new BackupError("Versão de backup inválida. Use --backup-version auto, 1, 2 ou 3.");
+}
 
 const Iso = z.string().min(1);
 const Uuid = z.string().min(1);
@@ -90,17 +99,20 @@ const SnapshotSchema = z.object({
 
 export class BackupError extends Error {}
 
-export async function readMarcoBackup(path: string): Promise<MarcoState> {
+export async function readMarcoBackup(path: string, version: BackupVersionChoice = "auto"): Promise<MarcoState> {
   let zip: JSZip;
   try {
     zip = await JSZip.loadAsync(await readFile(path));
   } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new BackupError(`${missingInputMessage("Backup de entrada do Marco", path)}\nO argumento --backup lê um ZIP já existente, exportado em Dispositivo → Exportar backup no Marco. O arquivo gerado por esta ferramenta será um JSON separado.`);
+    }
     throw new BackupError(`Não foi possível abrir o backup ${path}: ${(err as Error).message}`);
   }
-  return parseMarcoBackup(zip);
+  return parseMarcoBackup(zip, version);
 }
 
-export async function parseMarcoBackup(zip: JSZip): Promise<MarcoState> {
+export async function parseMarcoBackup(zip: JSZip, version: BackupVersionChoice = "auto"): Promise<MarcoState> {
   const manifestText = await zip.file("manifest.json")?.async("string");
   const snapshotText = await zip.file("snapshot.json")?.async("string");
   if (!manifestText || !snapshotText) {
@@ -111,9 +123,15 @@ export async function parseMarcoBackup(zip: JSZip): Promise<MarcoState> {
   if (!manifest.success) {
     throw new BackupError(`Backup inválido (manifest.json):\n${z.prettifyError(manifest.error)}`);
   }
-  if (manifest.data.formatVersion !== SUPPORTED_BACKUP_VERSION) {
+  const detected = manifest.data.formatVersion;
+  if (!SUPPORTED_BACKUP_VERSIONS.some((supported) => supported === detected)) {
     throw new BackupError(
-      `Backup no formato ${manifest.data.formatVersion}; esta versão do marco-import lê o formato ${SUPPORTED_BACKUP_VERSION}. Exporte um backup novo no Marco.`,
+      `Backup no formato ${detected}; formatos suportados: ${SUPPORTED_BACKUP_VERSIONS.join(", ")}.`,
+    );
+  }
+  if (version !== "auto" && version !== detected) {
+    throw new BackupError(
+      `Foi selecionada a versão ${version}, mas o manifest.json informa formato ${detected}. Use --backup-version ${detected} ou --backup-version auto.`,
     );
   }
 

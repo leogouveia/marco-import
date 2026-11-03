@@ -1,7 +1,7 @@
 /**
  * Dados do Marco lidos do backup local (só os campos que a importação usa).
  *
- * O backup é o ZIP gerado em Dispositivo → Exportar backup (formato 3), com `manifest.json`,
+ * O backup é o ZIP gerado em Dispositivo → Exportar backup (formatos 1, 2 e 3), com `manifest.json`,
  * `snapshot.json` e `sync-meta.json`.
  */
 import type { MarcoStatus } from "../domain/status.js";

@@ -17,17 +17,20 @@ import { loadConfig } from "./config/load.js";
 import { GithubClient } from "./github/client.js";
 import { collectGithub } from "./github/collect.js";
 import { Tape, type TapeMode } from "./http/tape.js";
-import { readMarcoBackup } from "./marco/backup.js";
+import { readMarcoBackup, type BackupVersionChoice } from "./marco/backup.js";
 import { planRange } from "./marco/types.js";
 import { buildImportFile, danglingWorkItems, writeImportFile } from "./output/write.js";
 import { choosePlan, describePlan } from "./ui/plan.js";
 import { createProgress } from "./ui/progress.js";
 import { askSelection, defaultSelection } from "./ui/select.js";
 import { printSummary } from "./ui/summary.js";
+import { chooseBackupVersion } from "./ui/backup-version.js";
+import { configuredOutputDirectory } from "./shared/paths.js";
 
 export type AppOptions = {
   configPath: string;
   backupPath: string;
+  backupVersion?: BackupVersionChoice;
   outDir?: string;
   planId?: string;
   tape: TapeMode;
@@ -39,7 +42,8 @@ export type AppOptions = {
 export async function runApp(options: AppOptions): Promise<void> {
   const replaying = options.tape.kind === "replay";
   const config = loadConfig(options.configPath, { requireTokens: !replaying });
-  const marco = await readMarcoBackup(options.backupPath);
+  const backupVersion = await chooseBackupVersion({ version: options.backupVersion, interactive: !options.yes });
+  const marco = await readMarcoBackup(options.backupPath, backupVersion);
   if (marco.backup.dirty) {
     console.warn("Aviso: o backup foi exportado com alterações ainda não sincronizadas nesse dispositivo.");
   }
@@ -84,7 +88,7 @@ export async function runApp(options: AppOptions): Promise<void> {
     console.log("Cancelado; nenhum arquivo gerado.");
     return;
   }
-  const path = writeImportFile(file, options.outDir ?? config.output.directory);
+  const path = writeImportFile(file, options.outDir ?? configuredOutputDirectory(config.output.directory));
   console.log(`Arquivo gerado: ${path}`);
   console.log("No Marco, abra a tela Importar e selecione esse arquivo.");
 }

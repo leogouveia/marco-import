@@ -8,6 +8,8 @@ import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { runApp } from "./app.js";
 import type { TapeMode } from "./http/tape.js";
+import { parseBackupVersion } from "./marco/backup.js";
+import { DEFAULT_CONFIG_PATH } from "./shared/paths.js";
 
 const HELP = `marco-import: importa PBIs do Azure Boards e commits/PRs do GitHub para o Marco.
 
@@ -15,15 +17,19 @@ Uso:
   marco-import --backup <arquivo.zip> [opções]
 
 Opções:
-  -b, --backup <arquivo>   Backup do Marco (Dispositivo → Exportar backup). Obrigatório.
-  -c, --config <arquivo>   Configuração (padrão: marco-import.yaml).
-  -o, --out <pasta>        Pasta do arquivo gerado (padrão: output.directory da configuração).
+  -b, --backup <arquivo>   ZIP existente exportado pelo Marco. Entrada obrigatória.
+      --backup-version <versão>  auto, 1, 2 ou 3 (sem opção, pergunta; com --yes, auto).
+  -c, --config <arquivo>   Configuração (padrão: marco-import.yaml na pasta do projeto).
+  -o, --out <pasta>        Pasta do JSON gerado (padrão: pasta do projeto; veja output.directory).
   -p, --plan <id>          ID do plano no Marco (sem isso, pergunta).
       --dump <pasta>       Grava as respostas do Azure e do GitHub (para diagnóstico).
       --replay <pasta>     Reproduz uma coleta gravada com --dump, sem rede e sem tokens.
   -y, --yes                Sem perguntas: usa a seleção padrão (exige --plan com mais de um plano).
   -h, --help               Mostra esta ajuda.
   -v, --version            Mostra a versão.
+
+Entrada: backup ZIP existente (Dispositivo → Exportar backup no Marco).
+Saída: marco-import-<data>.json, para selecionar na tela Importar do Marco.
 
 Tokens: AZURE_DEVOPS_PAT e GITHUB_TOKEN (ou azure.token e github.token na configuração).
 `;
@@ -40,7 +46,8 @@ async function main(): Promise<number> {
   const { values } = parseArgs({
     options: {
       backup: { type: "string", short: "b" },
-      config: { type: "string", short: "c", default: "marco-import.yaml" },
+      "backup-version": { type: "string" },
+      config: { type: "string", short: "c", default: DEFAULT_CONFIG_PATH },
       out: { type: "string", short: "o" },
       plan: { type: "string", short: "p" },
       dump: { type: "string" },
@@ -70,6 +77,8 @@ async function main(): Promise<number> {
     return 2;
   }
 
+  const backupVersion = values["backup-version"] === undefined ? undefined : parseBackupVersion(values["backup-version"]);
+
   const tape: TapeMode = values.dump
     ? { kind: "record", dir: values.dump }
     : values.replay
@@ -79,6 +88,7 @@ async function main(): Promise<number> {
   await runApp({
     configPath: values.config,
     backupPath: values.backup,
+    backupVersion,
     outDir: values.out,
     planId: values.plan,
     tape,

@@ -77,7 +77,7 @@ export const ConfigSchema = z
   .object({
     azure: AzureSchema,
     github: GithubSchema,
-    output: z.object({ directory: z.string().default("saida") }).default({ directory: "saida" }),
+    output: z.object({ directory: z.string().default(".") }).default({ directory: "." }),
   })
   .superRefine((config, ctx) => {
     // Um estado do Azure só pode levar a um status do Marco, e não pode estar também em "removido".

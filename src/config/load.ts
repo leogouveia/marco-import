@@ -8,6 +8,7 @@ import { readFileSync, statSync } from "node:fs";
 import { parse } from "yaml";
 import { z } from "zod";
 import { ConfigSchema, type ResolvedConfig } from "./schema.js";
+import { missingInputMessage } from "../shared/paths.js";
 
 export const TOKEN_ENV = {
   azure: "AZURE_DEVOPS_PAT",
@@ -26,6 +27,9 @@ export function loadConfig(path: string, options: { requireTokens: boolean }): R
   try {
     raw = parse(readFileSync(path, "utf8"));
   } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new ConfigError(`${missingInputMessage("Arquivo de configuração", path)}\nCopie marco-import.example.yaml para marco-import.yaml e preencha a configuração, ou use --config <arquivo>.`);
+    }
     throw new ConfigError(`Não foi possível ler ${path}: ${(err as Error).message}`);
   }
 
